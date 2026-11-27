@@ -7,18 +7,21 @@ export const ReleasesView = {
       flag_id: 3, env_id: 1, kind: "percent", percent: 30, cohort_id: null,
       summary: "开发环境三成灰度试跑", use_shadow: false,
     });
-    const err = ref(""); const msg = ref("");
+    const err = ref(""); const msg = ref(""); const loseTicket = ref("");
     async function reload() {
       const res = await api("/api/releases");
       official.value = res.official || []; shadows.value = res.shadows || [];
     }
     async function publish() {
-      err.value = ""; msg.value = "";
+      err.value = ""; msg.value = ""; loseTicket.value = "";
       try {
         const body = { ...form.value, cohort_id: form.value.cohort_id || null };
         const res = await api("/api/releases/publish", { method: "POST", body: JSON.stringify(body) });
         msg.value = `已提交：${res.mode}`; await reload();
-      } catch (e) { err.value = e.message || String(e); }
+      } catch (e) {
+        err.value = e.message || String(e);
+        loseTicket.value = (e.data && (e.data.ticket || e.data.mark_id)) || e.ticket || "";
+      }
     }
     async function promote(id) {
       err.value = "";
@@ -26,7 +29,7 @@ export const ReleasesView = {
       catch (e) { err.value = e.message || String(e); }
     }
     onMounted(reload);
-    return { official, shadows, form, err, msg, publish, promote, reload };
+    return { official, shadows, form, err, msg, loseTicket, publish, promote, reload };
   },
   template: `
   <div class="grid">
@@ -44,6 +47,7 @@ export const ReleasesView = {
       <button class="btn" @click="publish">提交发布</button>
       <p class="muted" v-if="msg">{{ msg }}</p>
       <div class="err" v-if="err">{{ err }}</div>
+      <div class="err" v-if="loseTicket">抢败票号 <code>{{ loseTicket }}</code>，可在总览败方账 / 历史台账同票联查；正式区零增。</div>
     </div>
     <div class="panel span-7">
       <h2>正式发布</h2>

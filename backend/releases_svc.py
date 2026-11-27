@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from audit_svc import write_audit, write_history
 from auth import current_user, require_writer
 from db import connect
-from locks import acquire, release
+from locks import LockContention, acquire, release
 from policies import assert_flag_publishable, assert_not_killed_or_allow_kill, describe_path
 from validators import require_int, require_percent, require_rule_kind, require_str
 
@@ -59,7 +59,12 @@ def publish(body: PublishIn, authorization: str | None = Header(default=None)):
     summary = require_str(body.summary, "发布说明", 4)
     key = f"flag-release:{fid}:{eid}"
     with connect() as conn:
-        acquire(conn, key, user["username"])
+        try:
+            acquire(conn, key, user["username"])
+        except LockContention as lc:
+            # 甲路径：败方只记争用痕（acquire 已同事务落账），回同票抢败句；
+            # 不进入下面的 official/shadow 取舍段，正式与影子区均零写。
+            return lc.to_response()
         try:
             fl = conn.execute("SELECT * FROM flags WHERE id=?", (fid,)).fetchone()
             if not fl:
@@ -123,7 +128,10 @@ def promote_release_shadow(shadow_id: int, authorization: str | None = Header(de
             raise HTTPException(400, detail="影子发布不可升正")
         fid, eid = sh["flag_id"], sh["env_id"]
         key = f"flag-release:{fid}:{eid}"
-        acquire(conn, key, user["username"])
+        try:
+            acquire(conn, key, user["username"])
+        except LockContention as lc:
+            return lc.to_response()
         try:
             fl = conn.execute("SELECT * FROM flags WHERE id=?", (fid,)).fetchone()
             assert_flag_publishable(fl["status"])

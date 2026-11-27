@@ -76,6 +76,7 @@ label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 
 }
 .pill.warn { background: rgba(240,180,41,0.15); color: var(--warn); }
 .pill.danger { background: rgba(240,113,120,0.15); color: var(--danger); }
+.pill.ok { background: rgba(123,216,143,0.15); color: var(--ok); }
 .err { color: var(--danger); font-size: 0.86rem; margin-top: 0.45rem; }
 pre, code { font-family: var(--mono); }
 pre {

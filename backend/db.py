@@ -163,6 +163,14 @@ CREATE TABLE IF NOT EXISTS contention_marks(
   winner TEXT NOT NULL,
   created_at REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS contention_reviews(
+  id INTEGER PRIMARY KEY,
+  through_id INTEGER NOT NULL DEFAULT 0,
+  marks_at_review INTEGER NOT NULL DEFAULT 0,
+  note TEXT NOT NULL DEFAULT '',
+  reviewed_by TEXT NOT NULL,
+  created_at REAL NOT NULL
+);
 CREATE TABLE IF NOT EXISTS rollout_schedules(
   id INTEGER PRIMARY KEY,
   flag_id INTEGER NOT NULL REFERENCES flags(id),

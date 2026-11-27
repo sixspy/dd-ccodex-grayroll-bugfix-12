@@ -11,7 +11,12 @@ export async function api(path, opts = {}) {
   try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
   if (!res.ok) {
     const detail = (data && (data.detail || data.message)) || res.statusText;
-    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    const message = typeof detail === "string" ? detail : JSON.stringify(detail);
+    const err = new Error(message);
+    err.status = res.status;
+    err.data = data;
+    err.ticket = data && (data.ticket || (typeof data.detail === "object" && data.detail && data.detail.ticket));
+    throw err;
   }
   return data;
 }
